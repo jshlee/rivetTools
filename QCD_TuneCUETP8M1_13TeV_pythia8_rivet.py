@@ -16,27 +16,16 @@ process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-#import random
-#f_num = random.randrange(0,100000000)
-max_num = 1000
-min_pt = 50
-max_pt = -1
-
-process.maxEvents = cms.untracked.PSet(
-    input = cms.untracked.int32(max_num)
-)
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
 
 # Input source
 process.source = cms.Source("EmptySource")
-
-process.options = cms.untracked.PSet(
-
-)
+process.options = cms.untracked.PSet()
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
     version = cms.untracked.string('\\$Revision$'),
-    annotation = cms.untracked.string('Summer2012 sample with PYTHIA8: QCD dijet production, pThat = %d .. %d GeV, Tune4C'%(min_pt, max_pt)),
+    annotation = cms.untracked.string('PYTHIA8: QCD dijet production, pThat = GeV, Tune4C'),
     name = cms.untracked.string('\\$Source$')
 )
 
@@ -50,7 +39,7 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     'keep recoGenJets_ak4GenJetsNoNu_*_*',
     #'keep *_genParticles_*_*',
     ),
-    fileName = cms.untracked.string('QCD_Pt_%dto%d_Tune4C_8TeV_pythia8_GEN.root'%(min_pt, max_pt)),
+    fileName = cms.untracked.string('QCD_TuneCUETP8M1_13TeV_pythia8_GEN.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM-RAW')
@@ -67,30 +56,35 @@ process.genstepfilter.triggerConditions=cms.vstring("generation_step")
 from Configuration.AlCa.GlobalTag import GlobalTag
 process.GlobalTag = GlobalTag(process.GlobalTag, 'auto:mc', '')
 
+from Configuration.Generator.Pythia8CommonSettings_cfi import *
+from Configuration.Generator.Pythia8CUEP8M1Settings_cfi import *
+
 process.generator = cms.EDFilter("Pythia8GeneratorFilter",
-    pythiaPylistVerbosity = cms.untracked.int32(0),
-    filterEfficiency = cms.untracked.double(1),
-    pythiaHepMCVerbosity = cms.untracked.bool(False),
-    comEnergy = cms.double(8000.0),
-    crossSection = cms.untracked.double(76210670.0),
-    maxEventsToPrint = cms.untracked.int32(0),
-    PythiaParameters = cms.PSet(
-        processParameters = cms.vstring('Main:timesAllowErrors    = 10000', 
-            'ParticleDecays:limitTau0 = on', 
-            'ParticleDecays:tauMax = 10', 
-            'HardQCD:all = on', 
-            #'TimeShower:globalRecoil = on', # might turn off colour coherence
-            'PhaseSpace:pTHatMin = %d  '%min_pt, 
-            'PhaseSpace:pTHatMax = %d  '%max_pt, 
-            'Tune:pp 5', 
-            'Tune:ee 3'),
-        parameterSets = cms.vstring('processParameters')
-    )
+	maxEventsToPrint = cms.untracked.int32(1),
+	pythiaPylistVerbosity = cms.untracked.int32(1),
+	filterEfficiency = cms.untracked.double(1.0),
+	pythiaHepMCVerbosity = cms.untracked.bool(False),
+	comEnergy = cms.double(13000.0),
+	crossSection = cms.untracked.double(0.84265),
+	PythiaParameters = cms.PSet(
+            pythia8CommonSettingsBlock,
+            pythia8CUEP8M1SettingsBlock,
+	    processParameters = cms.vstring(
+			'HardQCD:all = on',
+			'PhaseSpace:pTHatMin = 100  ',
+			'PhaseSpace:pTHatMax = -1  ',
+            'TimeShower:globalRecoil = on', # might turn off colour coherence
+	    ),
+            parameterSets = cms.vstring('pythia8CommonSettings',
+                                        'pythia8CUEP8M1Settings',
+                                        'processParameters',
+                                        )
+	)
 )
 
 process.load('GeneratorInterface.RivetInterface.rivetAnalyzer_cfi')
 process.rivetAnalyzer.AnalysisNames = cms.vstring('cc_ana')
-process.rivetAnalyzer.OutputFile = cms.string('QCD_Pt_%dto%d_Tune4C_8TeV_pythia8_rivet.yoda'%(min_pt, max_pt))
+process.rivetAnalyzer.OutputFile = cms.string('QCD_TuneCUETP8M1_13TeV_pythia8_rivet.yoda')
 
 # Path and EndPath definitions
 process.generation_step = cms.Path(process.pgen)
@@ -107,5 +101,5 @@ for path in process.paths:
 #process.RandomNumberGeneratorService.generator.initialSeed = f_num
 
 process.generation_step+=process.rivetAnalyzer
-process.schedule.remove(process.RAWSIMoutput_step)
+#process.schedule.remove(process.RAWSIMoutput_step)
 process.MessageLogger.cerr.FwkReport.reportEvery = 5000
