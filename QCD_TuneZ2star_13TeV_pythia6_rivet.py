@@ -20,7 +20,8 @@ process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
 
 # Input source
 process.source = cms.Source("EmptySource")
-process.options = cms.untracked.PSet()
+process.options = cms.untracked.PSet( wantSummary = cms.untracked.bool(False) )
+#process.options.allowUnscheduled = cms.untracked.bool(True)
 
 # Production Info
 process.configurationMetadata = cms.untracked.PSet(
@@ -34,12 +35,11 @@ process.RAWSIMoutput = cms.OutputModule("PoolOutputModule",
     splitLevel = cms.untracked.int32(0),
     eventAutoFlushCompressedSize = cms.untracked.int32(5242880),
     outputCommands = cms.untracked.vstring('drop *',
-    'keep GenEventInfoProduct_generator_*_*',
-    'keep edmHepMCProduct_generator_*_*',
-    'keep recoGenJets_ak4GenJetsNoNu_*_*',
+    'keep *_generator_*_*',
+    'keep *_ak4GenJetsNoNu_*_*',
     #'keep *_genParticles_*_*',
     ),
-    fileName = cms.untracked.string('QCD_TuneZ2star_13TeV_pythia6_rivet.root'),
+    fileName = cms.untracked.string('QCD_TuneZ2star_13TeV_pythia6.root'),
     dataset = cms.untracked.PSet(
         filterName = cms.untracked.string(''),
         dataTier = cms.untracked.string('GEN-SIM-RAW')
@@ -86,8 +86,21 @@ process.load('GeneratorInterface.RivetInterface.rivetAnalyzer_cfi')
 process.rivetAnalyzer.AnalysisNames = cms.vstring('cc_ana')
 process.rivetAnalyzer.OutputFile = cms.string('QCD_TuneZ2star_13TeV_pythia6_rivet.yoda')
 
+#from PhysicsTools.HepMCCandAlgos.genParticles_cfi import genParticles#
+#from RecoJets.Configuration.GenJetParticles_cff import genParticlesForJets
+#from RecoJets.JetProducers.ak4GenJets_cfi import ak4GenJets
+#process.ak4GenJetsNoNu = ak4GenJets.clone( src = cms.InputTag("genParticlesForJetsNoNu") )
+process.JetSelector = cms.EDFilter("CandViewSelector",
+    src = cms.InputTag("ak4GenJetsNoNu"),
+    cut = cms.string("pt > 30 & abs( eta ) < 5")
+)       
+process.JetFilter = cms.EDFilter("CandViewCountFilter",
+    src = cms.InputTag("JetSelector"),
+    minNumber = cms.uint32(3),
+)
+
 # Path and EndPath definitions
-process.generation_step = cms.Path(process.pgen)
+process.generation_step = cms.Path(process.pgen*process.rivetAnalyzer*process.JetSelector*process.JetFilter)
 process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
@@ -99,7 +112,5 @@ for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
 
 #process.RandomNumberGeneratorService.generator.initialSeed = f_num
-
-process.generation_step+=process.rivetAnalyzer
 #process.schedule.remove(process.RAWSIMoutput_step)
 process.MessageLogger.cerr.FwkReport.reportEvery = 5000

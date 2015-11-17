@@ -17,7 +17,7 @@ namespace Rivet {
 
     /// Book histograms and initialise projections before the run
     void init() {
-      const FastJets jets(FinalState(-10, 10, 0.0*GeV), FastJets::ANTIKT, 0.5);
+      const FastJets jets(FinalState(-5., 5., 0.0), FastJets::ANTIKT, 0.4);
       addProjection(jets, "Jets");
 
       _h_1 = bookHisto1D("h_low_eta_low_pt", 18, 0, M_PI);
@@ -31,7 +31,11 @@ namespace Rivet {
 
     /// Perform the per-event analysis
     void analyze(const Event& event) {
-      const Jets& jets = applyProjection<FastJets>(event, "Jets").jetsByPt(30.0*GeV);
+      const Jets& jets = applyProjection<FastJets>(event, "Jets").jetsByPt(30.0);
+      //std::cout << "jets.size() " << jets.size()<<std::endl;
+      // for (auto j : jets){
+      // 	std::cout << " j.pt() " << j.pt()<<std::endl;
+      // }
       if (jets.size() < 3) vetoEvent;
 
       const FourMomentum jet1 = jets[0].momentum();
@@ -39,7 +43,7 @@ namespace Rivet {
       const FourMomentum jet3 = jets[2].momentum();
 
       // Cut on lead jet pT and lead/sublead jet centrality
-      if (jet1.pT() < 100*GeV) vetoEvent;
+      if (jet1.pT() < 100) vetoEvent;
       if (jet1.abseta() > 2.5 || jet2.abseta() > 2.5) vetoEvent;
 
       double dPhi12 = jet2.phi() - jet1.phi();
@@ -59,17 +63,17 @@ namespace Rivet {
 
       // Cut on dijet mass
       const FourMomentum diJet = jet1 + jet2;
-      if (diJet.mass() < 220*GeV) vetoEvent;
+      if (diJet.mass() < 220) vetoEvent;
 
       // Calc beta and fill histogram (choose central or fwd histo inline)
       double beta = fabs(atan2(dPhi23, sign(jet2.eta())*dEta23));
-      if (inRange(jet1.pT(), 74*GeV,220*GeV)){
-         ((jet2.abseta() < 0.8) ? _h_1 : _h_2)->fill(beta, event.weight());
-      }
-      if (inRange(jet1.pT(), 220*GeV,507*GeV)){
+      //if (inRange(jet1.pT(), 74,220)){
+      ((jet2.abseta() < 0.8) ? _h_1 : _h_2)->fill(beta, event.weight());
+	 //}
+      if (inRange(jet1.pT(), 220,507)){
          ((jet2.abseta() < 0.8) ? _h_3 : _h_4)->fill(beta, event.weight());
       }
-      if (inRange(jet1.pT(), 507*GeV,2500*GeV)){
+      if (inRange(jet1.pT(), 507,2500)){
          ((jet2.abseta() < 0.8) ? _h_5 : _h_6)->fill(beta, event.weight());
       }
 
