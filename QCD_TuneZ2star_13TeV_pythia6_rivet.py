@@ -16,7 +16,7 @@ process.load('GeneratorInterface.Core.genFilterSummary_cff')
 process.load('Configuration.StandardSequences.EndOfProcess_cff')
 process.load('Configuration.StandardSequences.FrontierConditions_GlobalTag_cff')
 
-process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(1000))
+process.maxEvents = cms.untracked.PSet(input = cms.untracked.int32(5000))
 
 # Input source
 process.source = cms.Source("EmptySource")
@@ -71,13 +71,19 @@ process.generator = cms.EDFilter('Pythia6GeneratorFilter',
 		processParameters = cms.vstring(
 			'MSEL = 1        ! QCD hight pT processes',
 			'CKIN(3) = 50    ! minimum pt hat for hard interactions',
-			'CKIN(4) = 10000    ! maximum pt hat for hard interactions',
-            'MSTP(67) = 0',
-            'MSTJ(50) = 0',
+			'CKIN(4) = 3000  ! maximum pt hat for hard interactions',
+			#'MSTP(142) = 2   ! Turns on the PYWEVT Pt reweighting routine',
+            #'MSTP(67) = 0',
+            #'MSTJ(50) = 0',
 		),
+		#CSAParameters = cms.vstring(
+		#	'CSAMODE = 7     ! towards a flat QCD spectrum',
+		#	'PTPOWER = 4.5   ! reweighting of the pt spectrum',
+		#),
 		parameterSets = cms.vstring(
 			'pythiaUESettings',
 			'processParameters',
+			#'CSAParameters',
 		)
 	)
 )
@@ -100,7 +106,7 @@ process.JetFilter = cms.EDFilter("CandViewCountFilter",
 )
 
 # Path and EndPath definitions
-process.generation_step = cms.Path(process.pgen*process.rivetAnalyzer*process.JetSelector*process.JetFilter)
+process.generation_step = cms.Path(process.pgen*process.rivetAnalyzer)#*process.JetSelector*process.JetFilter)
 process.genfiltersummary_step = cms.EndPath(process.genFilterSummary)
 process.endjob_step = cms.EndPath(process.endOfProcess)
 process.RAWSIMoutput_step = cms.EndPath(process.RAWSIMoutput)
@@ -112,5 +118,6 @@ for path in process.paths:
 	getattr(process,path)._seq = process.generator * getattr(process,path)._seq 
 
 #process.RandomNumberGeneratorService.generator.initialSeed = f_num
-#process.schedule.remove(process.RAWSIMoutput_step)
+process.schedule.remove(process.RAWSIMoutput_step)
+print process.RandomNumberGeneratorService.generator.initialSeed
 process.MessageLogger.cerr.FwkReport.reportEvery = 5000

@@ -26,16 +26,19 @@ namespace Rivet {
       _h_4 = bookHisto1D("h_high_eta_medium_pt", 18, 0, M_PI);
       _h_5 = bookHisto1D("h_low_eta_high_pt", 18, 0, M_PI);
       _h_6 = bookHisto1D("h_high_eta_high_pt", 18, 0, M_PI);
+      _h_7 = bookHisto1D("h_all_eta_all_pt", 18, 0, M_PI);
+      _h_8 = bookHisto1D("h_jet1_pt", 100, 0, 1000);
     }
 
 
     /// Perform the per-event analysis
     void analyze(const Event& event) {
       const Jets& jets = applyProjection<FastJets>(event, "Jets").jetsByPt(30.0);
-      //std::cout << "jets.size() " << jets.size()<<std::endl;
+      // std::cout << "jets.size() " << jets.size()<<std::endl;
+      // std::cout << "event.weight() " << event.weight()<<std::endl;
       // for (auto j : jets){
-      // 	std::cout << " j.pt() " << j.pt()<<std::endl;
-      // }
+      //  	std::cout << " j.pt() " << j.pt()<<std::endl;
+      //  }
       if (jets.size() < 3) vetoEvent;
 
       const FourMomentum jet1 = jets[0].momentum();
@@ -67,16 +70,17 @@ namespace Rivet {
 
       // Calc beta and fill histogram (choose central or fwd histo inline)
       double beta = fabs(atan2(dPhi23, sign(jet2.eta())*dEta23));
-      //if (inRange(jet1.pT(), 74,220)){
-      ((jet2.abseta() < 0.8) ? _h_1 : _h_2)->fill(beta, event.weight());
-	 //}
-      if (inRange(jet1.pT(), 220,507)){
-         ((jet2.abseta() < 0.8) ? _h_3 : _h_4)->fill(beta, event.weight());
+      if (inRange(jet1.pT(), 50, 100)){
+	((jet2.abseta() < 0.8) ? _h_1 : _h_2)->fill(beta, event.weight());
       }
-      if (inRange(jet1.pT(), 507,2500)){
-         ((jet2.abseta() < 0.8) ? _h_5 : _h_6)->fill(beta, event.weight());
+      if (inRange(jet1.pT(), 100, 500)){
+	((jet2.abseta() < 0.8) ? _h_3 : _h_4)->fill(beta, event.weight());
       }
-
+      if (inRange(jet1.pT(), 500, 2500)){
+	((jet2.abseta() < 0.8) ? _h_5 : _h_6)->fill(beta, event.weight());
+      }
+      _h_7->fill(beta, event.weight());
+      _h_8->fill(jet1.pt(), event.weight());
     }
 
 
@@ -84,7 +88,6 @@ namespace Rivet {
     void finalize() {
       //const double width = _h_hTotD->bin(0).xWidth();
       //const double width = 1.0;
-       
       //normalize(_h_hTotD, width);
       //normalize(_h_hTotDF, width);
       //normalize(_h_1, width);
@@ -105,6 +108,8 @@ namespace Rivet {
     Histo1DPtr _h_4;
     Histo1DPtr _h_5;
     Histo1DPtr _h_6;
+    Histo1DPtr _h_7;
+    Histo1DPtr _h_8;
     //@}
 
   };
